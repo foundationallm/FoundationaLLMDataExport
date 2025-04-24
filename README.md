@@ -21,7 +21,21 @@ This .NET 8 console application exports message data from an Azure Cosmos DB con
     git clone https://github.com/foundationallm/FoundationaLLMDataExport
     cd FoundationaLLMDataExport
     ```
-2.  **Configure Application Settings:**
+2.  **Create Azure Storage Container:**
+    Before configuring the application, ensure the target container exists in your Azure Storage account. This container will hold the exported CSV files and the application's state file within a `cosmosdb` folder. You can create it using the Azure Portal.
+
+    *Using the Azure Portal:*
+    1.  Navigate to the [Azure Portal](https://portal.azure.com/).
+    2.  Go to the specific Azure Storage account resource used by your FoundationaLLM deployment (the same one you will specify in `StorageAccountName` below).
+    3.  In the storage account menu on the left, under **Data storage**, click on **Containers**.
+    4.  Click the **+ Container** button at the top.
+    5.  Enter the **Name** for the new container. Use `exports` (this matches the default `StorageContainerName` in `appsettings.json`).
+    6.  Set the **Public access level** to **Private (no anonymous access)**.
+    7.  Click **Create**.
+
+    *Note: If you later decide to change the `StorageContainerName` value in `appsettings.json`, make sure you create a container with that specific name instead of `exports`.* 
+
+3.  **Configure Application Settings:**
     Create or modify the `appsettings.json` file in the project's output directory (e.g., `bin/Debug/net8.0`). Ensure the file's properties in your IDE are set to "Copy to Output Directory: Copy if newer" or "Copy always".
 
     **`appsettings.json` (Base Configuration):**
@@ -56,8 +70,8 @@ This .NET 8 console application exports message data from an Azure Cosmos DB con
     **Environment Variables:**
     You can also override any setting using environment variables (e.g., `CosmosDbEndpoint=value dotnet run`). Environment variables take the highest precedence.
 
-3.  **Azure Login (if running locally):**
-    Ensure you have the Azure CLI installed and run:
+4.  **Azure Login (if running locally):**
+    If you didn't already log in via Azure CLI in step 2, ensure you have the Azure CLI installed and run:
     ```bash
     az login
     ```
@@ -65,7 +79,7 @@ This .NET 8 console application exports message data from an Azure Cosmos DB con
     *   Cosmos DB: `Cosmos DB Built-in Data Reader` role (or custom role with read permissions) on the database/container.
     *   Storage Account: `Storage Blob Data Contributor` role on the target container (`StorageContainerName`).
 
-4.  **Build the application:**
+5.  **Build the application:**
     ```bash
     dotnet build
     ```
