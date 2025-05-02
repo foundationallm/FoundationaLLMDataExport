@@ -114,9 +114,10 @@ public class Program
             // Cosmos DB Client.
             var cosmosClientOptions = new CosmosClientOptions
             {
-                ConnectionMode = ConnectionMode.Gateway, // Explicitly use Gateway mode (HTTPS)
-                RequestTimeout = TimeSpan.FromSeconds(90), // Increase request timeout slightly (default is 60s)
-                EnableTcpConnectionEndpointRediscovery = true // Allows client to react to potential endpoint issues
+                // Switch to Direct connection mode - recommended for large continuation tokens
+                ConnectionMode = ConnectionMode.Direct, 
+                RequestTimeout = TimeSpan.FromSeconds(90), // Keep increased timeout
+                EnableTcpConnectionEndpointRediscovery = true 
             };
             var cosmosClient = new CosmosClient(cosmosDbEndpoint, credential, cosmosClientOptions);
             var database = cosmosClient.GetDatabase(cosmosDbDatabase);
