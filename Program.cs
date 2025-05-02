@@ -112,7 +112,12 @@ public class Program
             Console.WriteLine($"Ensured Blob Storage container exists: {storageContainerName}");
 
             // Cosmos DB Client.
-            var cosmosClientOptions = new CosmosClientOptions();
+            var cosmosClientOptions = new CosmosClientOptions
+            {
+                ConnectionMode = ConnectionMode.Gateway, // Explicitly use Gateway mode (HTTPS)
+                RequestTimeout = TimeSpan.FromSeconds(90), // Increase request timeout slightly (default is 60s)
+                EnableTcpConnectionEndpointRediscovery = true // Allows client to react to potential endpoint issues
+            };
             var cosmosClient = new CosmosClient(cosmosDbEndpoint, credential, cosmosClientOptions);
             var database = cosmosClient.GetDatabase(cosmosDbDatabase);
             _cosmosContainer = database.GetContainer(cosmosDbContainerName);
@@ -152,6 +157,18 @@ public class Program
             // DO NOT update the state blob after processing today, so the next run re-processes it.
             Console.WriteLine($"Finished processing today's data: {today:yyyy-MM-dd}. State remains at {endDateToProcess:yyyy-MM-dd}.");
             Console.WriteLine("Export process completed successfully.");
+        }
+        catch (CosmosException cosmosEx) // Catch specific Cosmos exceptions first
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"A Cosmos DB specific error occurred: {cosmosEx.StatusCode} (Substatus: {cosmosEx.SubStatusCode})");
+            Console.WriteLine($"Message: {cosmosEx.Message}");
+            // Log detailed diagnostics from the failed request
+            Console.WriteLine("--- Cosmos DB Diagnostics ---");
+            Console.WriteLine(cosmosEx.Diagnostics?.ToString() ?? "No diagnostics available.");
+            Console.WriteLine("--- End Diagnostics ---");
+            Console.ResetColor();
+            Environment.ExitCode = 4; // Indicate Cosmos DB specific error
         }
         catch (Azure.RequestFailedException azureEx) when (azureEx.Status == 403)
         {
@@ -317,8 +334,10 @@ public class Program
             queryDefinition,
             requestOptions: new QueryRequestOptions
             {
-                // Optional: MaxItemCount can be tuned based on expected item size and network latency
-                // MaxItemCount = 1000,
+                // Optional: MaxItemCount can be tuned based on expected item size and network latency.
+                // Lowering this (e.g., 100 or 500) might help if large pages cause client-side stress,
+                // but it won't fix underlying connectivity issues. Default is often 1000 or based on response size.
+                MaxItemCount = 500, 
                 // ConsistencyLevel = ConsistencyLevel.Session // Optional: Specify consistency
             });
 
